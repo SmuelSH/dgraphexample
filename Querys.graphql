@@ -1,0 +1,158 @@
+#--2.
+#--Crear un endpoint para listar todas las personas que han comprado en la plataforma.
+#--Debe usar tu base de datos local con los datos que hayan sido cargados, el día no
+#--importa.
+
+{
+  
+var(func:has(Transaction.idTran)){
+
+Transaction.Buyer{
+b as Buyer.idBuyer
+#Buyer.name
+#Buyer.age  
+}  
+  
+}
+
+q(func:has(Buyer.idBuyer),orderasc:Buyer.name) @filter(eq(Buyer.idBuyer,val(b))){
+
+idBuyer :Buyer.idBuyer
+name    :Buyer.name
+age     :Buyer.age
+}
+  
+}
+
+
+#----------------------------------------------------------------
+#--Crear un endpoint que reciba el ID del comprador y retorne:
+
+#--3.1.
+#--Su historial de compras
+
+{
+q(func:has(Transaction.idTran))
+  @filter(eq(Transaction.idBuyer,"820c6706"))
+{
+idTran:Transaction.idTran
+ip    :Transaction.ip  
+
+Products:Transaction.Products{
+idProduct:Product.idProduct
+name     :Product.name
+price    :Product.price  
+}  
+  
+}
+}
+
+#--3.2
+#--Otros compradores usando la misma IP
+
+{
+
+var(func:has(Transaction.idTran)) 
+@filter(eq(Transaction.idBuyer,"cdb244d9")){
+ips as  Transaction.ip
+}
+
+q(func:has(Transaction.idTran),orderasc:Transaction.ip)
+@filter( eq(Transaction.ip,val(ips))
+         and
+        not allofterms(Transaction.idBuyer, "cdb244d9")
+)  
+{
+  
+ip:Transaction.ip
+Buyer:Transaction.Buyer {
+idBuyer:Buyer.idBuyer
+name:Buyer.name
+}
+  
+}
+}
+
+
+#------ verifica
+{
+
+qq(func:has(Transaction.idTran),orderasc:Transaction.ip) 
+  @filter(eq(Transaction.idBuyer,"98be7c4")){
+  Transaction.ip
+  Transaction.Buyer{
+  Buyer.name
+}
+}
+
+}
+
+
+#--3.3.
+#--Algunas recomendaciones de productos que otras personas también
+#--compraron
+
+#uno:Productos comprados por Buyer
+{
+var(func:has(Transaction.idTran))
+@filter(eq(Transaction.idBuyer,"820c6706")){
+Transaction.Products{
+   Prod as Product.idProduct
+  }   
+}
+
+#dos: Productos comprados de Buyer por otros Buyers y Productos #Anexos tambien
+var(func:has(Product.idProduct)) @filter(eq(Product.idProduct,val(Prod))) {
+  #idProductOri:Product.idProduct
+  #nameOri:Product.name
+~Transaction.Products{
+#Transaction.idTran
+Transaction.Products{
+ProdSugerido as Product.idProduct
+#Product.name
+}
+}
+}
+#tres: Lista de Productos Sugeridos
+q(func:has(Product.idProduct),first:20)
+@filter(eq(Product.idProduct,val(ProdSugerido))){
+
+  idProduct:Product.idProduct
+  Product:Product.name
+}  
+  
+  
+}
+
+
+#query comprobacion
+#---
+
+{
+
+q(func:has(Transaction.idTran),first:10){
+
+ Transaction.idTran
+ Transaction.ip
+ Transaction.device
+ 
+    Transaction.Buyer{
+   Buyer.idBuyer
+   Buyer.name
+   Buyer.age
+  }
+ 
+  Transaction.Products{
+    Product.idProduct
+    Product.name
+    Product.price  
+  }
+  
+
+} 
+
+  
+}
+    
+
+    
